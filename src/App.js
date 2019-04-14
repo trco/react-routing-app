@@ -1,15 +1,14 @@
 import React from 'react';
 import 'semantic-ui-css/semantic.min.css';
 import createHistory from 'history/createBrowserHistory';
+import PropTypes from 'prop-types';
 
 
 const topMargin = {
   marginTop: '3em'
 };
 
-const history = createHistory();
-
-const Link = ({ to, children }) => (
+const Link = ({ to, children }, { history }) => (
   <a
     onClick={(evt) => {
       evt.preventDefault();
@@ -21,8 +20,12 @@ const Link = ({ to, children }) => (
   </a>
 );
 
-const Route = ({ path, component: Component }) => {
-  const pathname = window.location.pathname;
+Link.contextTypes = {
+  history: PropTypes.object
+};
+
+const Route = ({ path, component: Component }, { location }) => {
+  const pathname = location.pathname;
   if (pathname.match(path)) {
     return <Component />;
   } else {
@@ -30,41 +33,66 @@ const Route = ({ path, component: Component }) => {
   }
 };
 
-class App extends React.Component {
+Route.contextTypes = {
+  location: PropTypes.object
+};
 
-  componentDidMount() {
-    history.listen(() => this.forceUpdate());
+class Router extends React.Component {
+
+  // To expose context to children specify the type of each context
+  static childContextTypes = {
+    history: PropTypes.object,
+    location: PropTypes.object,
+  };
+
+  // Add history & location to the Router
+  constructor(props) {
+    super(props);
+    this.history = createHistory();
+    this.history.listen(() => this.forceUpdate());
+  }
+
+  // Add history & location to the context accessible to Router's children
+  getChildContext() {
+    return {
+      history: this.history,
+      location: window.location
+    };
   }
 
   render() {
-    return (
-      <div className='ui text container' style={topMargin}>
-
-        <h2 className='ui dividing header'>
-          Which body of water?
-        </h2>
-
-        <ul>
-          <li>
-            <Link to='/atlantic'>
-              <code>/atlantic</code>
-            </Link>
-          </li>
-          <li>
-            <Link to='/pacific'>
-              <code>/pacific</code>
-            </Link>
-          </li>
-        </ul>
-
-        <hr />
-
-        <Route path='/atlantic' component={Atlantic}/>
-        <Route path='/pacific' component={Pacific}/>
-      </div>
-    );
+    return this.props.children;
   }
 }
+
+const App = () => (
+  <Router>
+    <div className='ui text container' style={topMargin}>
+
+      <h2 className='ui dividing header'>
+        Which body of water?
+      </h2>
+
+      <ul>
+        <li>
+          <Link to='/atlantic'>
+            <code>/atlantic</code>
+          </Link>
+        </li>
+        <li>
+          <Link to='/pacific'>
+            <code>/pacific</code>
+          </Link>
+        </li>
+      </ul>
+
+      <hr />
+
+      <Route path='/atlantic' component={Atlantic}/>
+      <Route path='/pacific' component={Pacific}/>
+    </div>
+  </Router>
+);
 
 export default App;
 
