@@ -1,17 +1,86 @@
 import React from 'react';
 import 'semantic-ui-css/semantic.min.css';
-
-import  {
-  BrowserRouter as Router,
-  Route,
-  Link,
-  Redirect,
-} from 'react-router-dom';
-
+import createHistory from 'history/createBrowserHistory';
+import PropTypes from 'prop-types';
 
 const topMargin = {
   marginTop: '3em'
 };
+
+const Link = ({ to, children }, { history }) => (
+  <a
+    onClick={(evt) => {
+      evt.preventDefault();
+      history.push(to);
+    }}
+    href={to}
+  >
+    {children}
+  </a>
+);
+
+Link.contextTypes = {
+  history: PropTypes.object
+};
+
+const Route = ({ path, component: Component }, { location }) => {
+  const pathname = location.pathname;
+  if (pathname.match(path)) {
+    return <Component />;
+  } else {
+    return null;
+  }
+};
+
+Route.contextTypes = {
+  location: PropTypes.object
+};
+
+class Redirect extends React.Component {
+
+  static contextTypes = {
+    history: PropTypes.object,
+  }
+
+  // Performs redirect to 'to' after it's mounted
+  componentDidMount() {
+    const history = this.context.history;
+    const to = this.props.to;
+    history.push(to);
+  }
+
+  render() {
+    return null;
+  }
+};
+
+class Router extends React.Component {
+
+  // To expose context to children specify the type of each context
+  static childContextTypes = {
+    history: PropTypes.object,
+    location: PropTypes.object,
+  };
+
+  // Add history & location to the Router
+  constructor(props) {
+    super(props);
+    this.history = createHistory();
+    this.history.listen(() => this.forceUpdate());
+  }
+
+  // Add history & location to the context accessible to Router's children
+  getChildContext() {
+    return {
+      history: this.history,
+      location: window.location
+    };
+  }
+
+  render() {
+    return this.props.children;
+  }
+}
 
 const App = () => (
   <Router>
@@ -41,22 +110,9 @@ const App = () => (
 
       <hr />
 
-      <Route path='/atlantic/ocean' render={() => (
-        <div>
-          <h3>Atlantic Ocean Again</h3>
-          <p>
-            Also known as "The Pond"
-          </p>
-        </div>
-      )}/>
       <Route path='/atlantic' component={Atlantic}/>
       <Route path='/pacific' component={Pacific}/>
       <Route path='/black-sea' component={BlackSea}/>
-      <Route exact path ='/' render={() => (
-        <div>
-          <h3>Welcome! Visit one of the links above.</h3>
-        </div>
-      )}/>
     </div>
   </Router>
 );
